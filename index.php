@@ -57,14 +57,14 @@ if (isset($_POST["newState"])) {
 
 	// actually update it
 	$action = $newState ? "set-locate" : "unset-locate";
-	$locateResponse = do_request("POST", "api/s/" . CONTROLLER_SITE_ID . "/cmd/devmgr", array(
+	$locateResponse = do_request("POST", "api/s/" . DEVICE_SITE_ID . "/cmd/devmgr", array(
 		"cmd" => $action,
 		"mac" => DEVICE_MAC
 	));
 }
 
 // get the device status
-$deviceResponse = do_request("POST", "api/s/" . CONTROLLER_SITE_ID . "/stat/device", array(
+$deviceResponse = do_request("POST", "api/s/" . DEVICE_SITE_ID . "/stat/device", array(
 	"macs" => array(
 		DEVICE_MAC
 	)
