@@ -85,11 +85,16 @@ curl_close($ch);
 <html>
 	<head>
 		<title>unifi-blink</title>
+
+		<link href="https://fonts.googleapis.com/css2?family=Lato&display=swap" rel="stylesheet" />
+		<link href="style.css" rel="stylesheet" />
 	</head>
 	<body>
 		<form method="POST">
-			<p>Current status: <?php if ($locating) { ?>locating<?php } else { ?>not locating<?php } ?></p>
 			<input type="hidden" name="newState" value="<?php echo !$locating ? 'true' : 'false'; ?>" />
+
+			<div class="header">Current status</div>
+			<div class="status"><?php if ($locating) { ?>locating<?php } else { ?>not locating<?php } ?></div>
 			<input type="submit" value="Toggle" />
 		</form>
 	</body>
