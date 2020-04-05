@@ -1,11 +1,22 @@
 <?php
 require_once("config.inc.php");
 
+if (defined("AUTH_TOKEN") && AUTH_TOKEN != "") {
+	if (!isset($_GET["token"])) {
+		die("Auth token is required.");
+	}
+	if ($_GET["token"] != AUTH_TOKEN) {
+		die("Invalid auth token.");
+	}
+}
+
 $ch = curl_init();
 
+// enable cURL's cookie engine
+// we only need to have it last for the duration of this request so don't actually give it a file
 curl_setopt($ch, CURLOPT_COOKIEFILE, "");
 
-function make_request($type, $path, $data) {
+function do_request($type, $path, $data) {
 	global $ch;
 	$fullURL = CONTROLLER_URL . $path;
 	curl_setopt($ch, CURLOPT_URL, $fullURL);
@@ -28,7 +39,7 @@ function make_request($type, $path, $data) {
 }
 
 // log in
-$loginResponse = make_request("POST", "api/login", array(
+$loginResponse = do_request("POST", "api/login", array(
 	"username" => CONTROLLER_USERNAME,
 	"password" => CONTROLLER_PASSWORD
 ));
@@ -36,6 +47,7 @@ if ($loginResponse->meta->rc == "error") {
 	die("Failed to log into UniFi controller. Are the username and password correct?");
 }
 
+// check if we actually have a new state to set
 if (isset($_POST["newState"])) {
 	$newStateString = $_POST["newState"];
 	$newState = filter_var($newStateString, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
@@ -45,14 +57,14 @@ if (isset($_POST["newState"])) {
 
 	// actually update it
 	$action = $newState ? "set-locate" : "unset-locate";
-	$locateResponse = make_request("POST", "api/s/" . CONTROLLER_SITE_ID . "/cmd/devmgr", array(
+	$locateResponse = do_request("POST", "api/s/" . CONTROLLER_SITE_ID . "/cmd/devmgr", array(
 		"cmd" => $action,
 		"mac" => DEVICE_MAC
 	));
 }
 
 // get the device status
-$deviceResponse = make_request("POST", "api/s/" . CONTROLLER_SITE_ID . "/stat/device", array(
+$deviceResponse = do_request("POST", "api/s/" . CONTROLLER_SITE_ID . "/stat/device", array(
 	"macs" => array(
 		DEVICE_MAC
 	)
@@ -64,7 +76,7 @@ $device = $deviceResponse->data[0];
 $locating = $device->locating;
 
 // log out
-$logoutResponse = make_request("GET", "api/logout", array());
+$logoutResponse = do_request("GET", "api/logout", array());
 
 curl_close($ch);
 
