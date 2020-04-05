@@ -1,6 +1,10 @@
 <?php
 require_once("config.inc.php");
 
+if (CSRF_PROTECTION) {
+	session_start();
+}
+
 if (defined("AUTH_TOKEN") && AUTH_TOKEN != "") {
 	if (!isset($_GET["token"])) {
 		die("Auth token is required.");
@@ -15,6 +19,22 @@ $ch = curl_init();
 // enable cURL's cookie engine
 // we only need to have it last for the duration of this request so don't actually give it a file
 curl_setopt($ch, CURLOPT_COOKIEFILE, "");
+
+function generate_csrf_token() {
+	if (function_exists("random_bytes")) {
+		return bin2hex(random_bytes(32));
+	}
+
+	if (function_exists("mcrypt_create_iv")) {
+		return bin2hex(mcrypt_create_iv(32, MCRYPT_DEV_URANDOM));
+	}
+
+	if (function_exists("openssl_random_pseudo_bytes")) {
+		return bin2hex(openssl_random_pseudo_bytes(32));
+	}
+
+	die("Unable to generate secure random bytes. You should upgrade PHP to at least version 7. If this is not possible, then at least make sure that either the mcrypt or openssl extensions are enabled.");
+}
 
 function do_request($type, $path, $data) {
 	global $ch;
@@ -38,6 +58,12 @@ function do_request($type, $path, $data) {
 	return json_decode($content);
 }
 
+if (CSRF_PROTECTION) {
+	if (!isset($_SESSION["csrfToken"])) {
+		$_SESSION["csrfToken"] = generate_csrf_token();
+	}
+}
+
 // log in
 $loginResponse = do_request("POST", "api/login", array(
 	"username" => CONTROLLER_USERNAME,
@@ -49,6 +75,16 @@ if ($loginResponse->meta->rc == "error") {
 
 // check if we actually have a new state to set
 if (isset($_POST["newState"])) {
+	if (CSRF_PROTECTION) {
+		if (!isset($_POST["csrfToken"])) {
+			die("CSRF token required.");
+		}
+
+		if (!hash_equals($_SESSION["csrfToken"], $_POST["csrfToken"])) {
+			die("CSRF token invalid.");
+		}
+	}
+
 	$newStateString = $_POST["newState"];
 	$newState = filter_var($newStateString, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
 	if ($newState === null) {
@@ -91,6 +127,9 @@ curl_close($ch);
 	</head>
 	<body>
 		<form method="POST">
+			<?php if (CSRF_PROTECTION) { ?>
+				<input type="hidden" name="csrfToken" value="<?php echo htmlentities($_SESSION["csrfToken"]); ?>" />
+			<?php } ?>
 			<input type="hidden" name="newState" value="<?php echo !$locating ? 'true' : 'false'; ?>" />
 
 			<div class="header">Current status</div>

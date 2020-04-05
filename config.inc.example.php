@@ -8,3 +8,4 @@ define("DEVICE_SITE_ID", "default");
 define("DEVICE_MAC", "12:23:45:67:89:ab");
 
 define("AUTH_TOKEN", "");
+define("CSRF_PROTECTION", true);

@@ -1,5 +1,5 @@
 # unifi-blink
-Script to allow easy blinking of a [UniFi access point](https://unifi-network.ui.com/)'s LED. Useful as a busy indicator or similar.
+Script to allow easy blinking of a [UniFi access point](https://unifi-network.ui.com/)'s LED. Useful as a busy indicator or similar. Requires PHP 5.6.0 or greater.
 
 This is really just a wrapper around the [semi-documented](https://ubntwiki.com/products/software/unifi-controller/api) UniFi Controller API. You _will_ need a running UniFi controller, and you should make sure that there are [no STUN errors](https://help.ubnt.com/hc/en-us/articles/115015457668-UniFi-Troubleshooting-STUN-Communication-Errors) (if your controller is on the same network as the access points, you should be fine&mdash;this only really comes up with a remote controller).
 
@@ -18,6 +18,7 @@ Copy the included PHP and CSS files to a folder on your server. Copy the provide
 * `DEVICE_MAC` - the MAC address of the device to control the LED of. You can find this by opening the device's details page in the UniFi controller&mdash;it should be under the "Overview" category.
 
 * `AUTH_TOKEN` (optional) - if set, this will require an authentication token to be included in the URL in order to use unifi-blink.
+* `CSRF_PROTECTION` - whether CSRF protection should be enabled. You should leave this as `true` unless you really know what you're doing.
 
 ## Auth token
 If, in your configuration, you set `AUTH_TOKEN` to some string, then you'll need to include that string in the URL when using unifi-blink. For example, if your `AUTH_TOKEN` is `secure_t0ken`, then you'll need to go to `https://(server domain)/unifi-blink/index.php?token=secure_t0ken`.
