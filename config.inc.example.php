@@ -7,5 +7,8 @@ define("CONTROLLER_NO_VERIFY", true);
 define("DEVICE_SITE_ID", "default");
 define("DEVICE_MAC", "12:23:45:67:89:ab");
 
-define("AUTH_TOKEN", "");
 define("CSRF_PROTECTION", true);
+define("AUTH_TOKEN", "");
+define("PRIVATEAUTH_ENDPOINT", "");
+define("PRIVATEAUTH_CLIENT_ID", "");
+define("PRIVATEAUTH_REDIRECT_URI", "");

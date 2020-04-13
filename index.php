@@ -1,8 +1,65 @@
 <?php
 require_once("config.inc.php");
+require_once("util.inc.php");
 
-if (CSRF_PROTECTION) {
+$privateAuthEnabled = (defined("PRIVATEAUTH_ENDPOINT") && PRIVATEAUTH_ENDPOINT != "");
+
+if (CSRF_PROTECTION || $privateAuthEnabled) {
 	session_start();
+}
+
+if ($privateAuthEnabled) {
+	if (!isset($_SESSION["privateAuthMe"])) {
+		if (!isset($_GET["code"])) {
+			// need to login
+			$_SESSION["privateAuthState"] = generate_csrf_token();
+			$authURL = PRIVATEAUTH_ENDPOINT . "?" . http_build_query(array(
+				"client_id" => PRIVATEAUTH_CLIENT_ID,
+				"redirect_uri" => PRIVATEAUTH_REDIRECT_URI,
+				"state" => $_SESSION["privateAuthState"]
+			));
+			header("Location: $authURL");
+			die();
+		} else {
+			// handling login success
+			if (!isset($_GET["state"])) {
+				die("Missing state parameter from PrivateAuth endpoint.");
+			}
+
+			if (!hash_equals($_SESSION["privateAuthState"], $_GET["state"])) {
+				die("PrivateAuth state invalid.");
+			}
+
+			// verify token
+			$tokenDetails = privateauth_verify_token($_GET["code"]);
+			if ($tokenDetails === NULL) {
+				die("PrivateAuth token invalid.");
+			}
+
+			if (!property_exists($tokenDetails, "me")) {
+				die("PrivateAuth server response invalid.");
+			}
+
+			$_SESSION["privateAuthMe"] = $tokenDetails->me;
+			header("Location: " . PRIVATEAUTH_CLIENT_ID);
+			die();
+		}
+	} else {
+		if (isset($_POST["logout"])) {
+			if (CSRF_PROTECTION) {
+				if (!isset($_POST["csrfToken"])) {
+					die("CSRF token required.");
+				}
+
+				if (!hash_equals($_SESSION["csrfToken"], $_POST["csrfToken"])) {
+					die("CSRF token invalid.");
+				}
+			}
+
+			unset($_SESSION["privateAuthMe"]);
+			die("You have been logged out.");
+		}
+	}
 }
 
 if (defined("AUTH_TOKEN") && AUTH_TOKEN != "") {
@@ -14,50 +71,6 @@ if (defined("AUTH_TOKEN") && AUTH_TOKEN != "") {
 	}
 }
 
-$ch = curl_init();
-
-// enable cURL's cookie engine
-// we only need to have it last for the duration of this request so don't actually give it a file
-curl_setopt($ch, CURLOPT_COOKIEFILE, "");
-
-function generate_csrf_token() {
-	if (function_exists("random_bytes")) {
-		return bin2hex(random_bytes(32));
-	}
-
-	if (function_exists("mcrypt_create_iv")) {
-		return bin2hex(mcrypt_create_iv(32, MCRYPT_DEV_URANDOM));
-	}
-
-	if (function_exists("openssl_random_pseudo_bytes")) {
-		return bin2hex(openssl_random_pseudo_bytes(32));
-	}
-
-	die("Unable to generate secure random bytes. You should upgrade PHP to at least version 7. If this is not possible, then at least make sure that either the mcrypt or openssl extensions are enabled.");
-}
-
-function do_request($type, $path, $data) {
-	global $ch;
-	$fullURL = CONTROLLER_URL . $path;
-	curl_setopt($ch, CURLOPT_URL, $fullURL);
-	curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-
-	if (CONTROLLER_NO_VERIFY) {
-		curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
-		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
-	}
-
-	if ($type == "POST") {
-		$stringData = json_encode($data);
-		curl_setopt($ch, CURLOPT_POST, 1);
-		curl_setopt($ch, CURLOPT_POSTFIELDS, $stringData);
-		curl_setopt($ch, CURLOPT_HTTPHEADER, array("Content-Type: application/json"));
-	}
-
-	$content = curl_exec($ch);
-	return json_decode($content);
-}
-
 if (CSRF_PROTECTION) {
 	if (!isset($_SESSION["csrfToken"])) {
 		$_SESSION["csrfToken"] = generate_csrf_token();
@@ -65,7 +78,7 @@ if (CSRF_PROTECTION) {
 }
 
 // log in
-$loginResponse = do_request("POST", "api/login", array(
+$loginResponse = do_unifi_request("POST", "api/login", array(
 	"username" => CONTROLLER_USERNAME,
 	"password" => CONTROLLER_PASSWORD
 ));
@@ -93,26 +106,27 @@ if (isset($_POST["newState"])) {
 
 	// actually update it
 	$action = $newState ? "set-locate" : "unset-locate";
-	$locateResponse = do_request("POST", "api/s/" . DEVICE_SITE_ID . "/cmd/devmgr", array(
+	$locateResponse = do_unifi_request("POST", "api/s/" . DEVICE_SITE_ID . "/cmd/devmgr", array(
 		"cmd" => $action,
 		"mac" => DEVICE_MAC
 	));
 }
 
 // get the device status
-$deviceResponse = do_request("POST", "api/s/" . DEVICE_SITE_ID . "/stat/device", array(
+$deviceResponse = do_unifi_request("POST", "api/s/" . DEVICE_SITE_ID . "/stat/device", array(
 	"macs" => array(
 		DEVICE_MAC
 	)
 ));
-if (count($deviceResponse->data) == 0) {
-	die("Could not find UniFi device with given MAC address. Are you sure you have the correct site ID and MAC address?");
-}
-$device = $deviceResponse->data[0];
-$locating = $device->locating;
+// if (count($deviceResponse->data) == 0) {
+// 	die("Could not find UniFi device with given MAC address. Are you sure you have the correct site ID and MAC address?");
+// }
+// $device = $deviceResponse->data[0];
+// $locating = $device->locating;
+$locating = false;
 
 // log out
-$logoutResponse = do_request("GET", "api/logout", array());
+$logoutResponse = do_unifi_request("GET", "api/logout", array());
 
 curl_close($ch);
 
@@ -128,7 +142,7 @@ curl_close($ch);
 		<link href="style.css" rel="stylesheet" />
 	</head>
 	<body>
-		<form method="POST">
+		<form class="main" method="POST">
 			<?php if (CSRF_PROTECTION) { ?>
 				<input type="hidden" name="csrfToken" value="<?php echo htmlentities($_SESSION["csrfToken"]); ?>" />
 			<?php } ?>
@@ -138,5 +152,14 @@ curl_close($ch);
 			<div class="status"><?php if ($locating) { ?>locating<?php } else { ?>not locating<?php } ?></div>
 			<input type="submit" value="Toggle" />
 		</form>
+		<?php if (isset($_SESSION["privateAuthMe"])) { ?>
+			<form class="loginInfo" method="POST">
+				logged in as <?php echo htmlspecialchars($_SESSION["privateAuthMe"]); ?>
+				<?php if (CSRF_PROTECTION) { ?>
+					<input type="hidden" name="csrfToken" value="<?php echo htmlentities($_SESSION["csrfToken"]); ?>" />
+				<?php } ?>
+				<input type="submit" name="logout" value="Log out" />
+			</form>
+		<?php } ?>
 	</body>
 </html>
