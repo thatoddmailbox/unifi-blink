@@ -17,8 +17,16 @@ Copy the included PHP and CSS files to a folder on your server. Copy the provide
 * `DEVICE_SITE_ID` - the site ID that contains the target UniFi device. You can find this by going to your devices page in the Controller and looking at the URL: it will look like https://(controller domain)/manage/site/(site name)/devices/. If you're using the default site, then this is just `default`.
 * `DEVICE_MAC` - the MAC address of the device to control the LED of. You can find this by opening the device's details page in the UniFi controller&mdash;it should be under the "Overview" category.
 
-* `AUTH_TOKEN` (optional) - if set, this will require an authentication token to be included in the URL in order to use unifi-blink.
 * `CSRF_PROTECTION` - whether CSRF protection should be enabled. You should leave this as `true` unless you really know what you're doing.
+* `AUTH_TOKEN` (optional) - if set, this will require an authentication token to be included in the URL in order to use unifi-blink.
+* `PRIVATEAUTH_ENDPOINT` (optional) - See the PrivateAuth section below.
+* `PRIVATEAUTH_CLIENT_ID` (optional) - See the PrivateAuth section below.
+* `PRIVATEAUTH_REDIRECT_URI` (optional) - See the PrivateAuth section below.
 
 ## Auth token
 If, in your configuration, you set `AUTH_TOKEN` to some string, then you'll need to include that string in the URL when using unifi-blink. For example, if your `AUTH_TOKEN` is `secure_t0ken`, then you'll need to go to `https://(server domain)/unifi-blink/index.php?token=secure_t0ken`.
+
+## PrivateAuth
+You can also set up unifi-blink to authenticate with a [PrivateAuth](https://github.com/thatoddmailbox/PrivateAuth) endpoint. To do so, modify `config.inc.php` to set `PRIVATEAUTH_ENDPOINT` to the URL of the endpoint you'd like to use. You'll also want to set `PRIVATEAUTH_CLIENT_ID` and `PRIVATEAUTH_REDIRECT_URI` to both be the URL where unifi-blink is publicly accessible.
+
+Currently, there is no way to limit the users that can log in&mdash;that is, anyone that the authentication endpoint lets through will have access.
