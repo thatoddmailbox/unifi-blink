@@ -118,12 +118,11 @@ $deviceResponse = do_unifi_request("POST", "api/s/" . DEVICE_SITE_ID . "/stat/de
 		DEVICE_MAC
 	)
 ));
-// if (count($deviceResponse->data) == 0) {
-// 	die("Could not find UniFi device with given MAC address. Are you sure you have the correct site ID and MAC address?");
-// }
-// $device = $deviceResponse->data[0];
-// $locating = $device->locating;
-$locating = false;
+if (count($deviceResponse->data) == 0) {
+	die("Could not find UniFi device with given MAC address. Are you sure you have the correct site ID and MAC address?");
+}
+$device = $deviceResponse->data[0];
+$locating = $device->locating;
 
 // log out
 $logoutResponse = do_unifi_request("GET", "api/logout", array());
