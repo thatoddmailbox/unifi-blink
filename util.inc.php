@@ -51,6 +51,8 @@ function do_unifi_request($type, $path, $data) {
 	$fullURL = CONTROLLER_URL . $path;
 	curl_setopt($ch, CURLOPT_URL, $fullURL);
 	curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+	curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+	curl_setopt($ch, CURLOPT_TIMEOUT, 5);
 
 	if (CONTROLLER_NO_VERIFY) {
 		curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
