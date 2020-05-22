@@ -121,7 +121,12 @@ $deviceResponse = do_unifi_request("POST", "api/s/" . DEVICE_SITE_ID . "/stat/de
 if (count($deviceResponse->data) == 0) {
 	die("Could not find UniFi device with given MAC address. Are you sure you have the correct site ID and MAC address?");
 }
+
 $device = $deviceResponse->data[0];
+if ($device->state == 0) {
+	die("The UniFi device has been disconnected from the controller. Check the UniFi controller for more details.");
+}
+
 $locating = $device->locating;
 
 // log out
