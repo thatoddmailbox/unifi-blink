@@ -22,6 +22,7 @@ Copy the included PHP and CSS files to a folder on your server. Copy the provide
 * `PRIVATEAUTH_ENDPOINT` (optional) - See the PrivateAuth section below.
 * `PRIVATEAUTH_CLIENT_ID` (optional) - See the PrivateAuth section below.
 * `PRIVATEAUTH_REDIRECT_URI` (optional) - See the PrivateAuth section below.
+* `PRIVATEAUTH_REQUIRE_PERMISSION` (optional) - See the PrivateAuth section below.
 
 ## Auth token
 If, in your configuration, you set `AUTH_TOKEN` to some string, then you'll need to include that string in the URL when using unifi-blink. For example, if your `AUTH_TOKEN` is `secure_t0ken`, then you'll need to go to `https://(server domain)/unifi-blink/index.php?token=secure_t0ken`.
@@ -29,4 +30,4 @@ If, in your configuration, you set `AUTH_TOKEN` to some string, then you'll need
 ## PrivateAuth
 You can also set up unifi-blink to authenticate with a [PrivateAuth](https://github.com/thatoddmailbox/PrivateAuth) endpoint. To do so, modify `config.inc.php` to set `PRIVATEAUTH_ENDPOINT` to the URL of the endpoint you'd like to use. You'll also want to set `PRIVATEAUTH_CLIENT_ID` and `PRIVATEAUTH_REDIRECT_URI` to both be the URL where unifi-blink is publicly accessible.
 
-Currently, there is no way to limit the users that can log in&mdash;that is, anyone that the authentication endpoint lets through will have access.
+The `PRIVATEAUTH_REQUIRE_PERMISSION` allows you to control which users can access unifi-blink. All users must have the permission you set `PRIVATEAUTH_REQUIRE_PERMISSION` to. If you set it to an empty string (`""`), then no permission is required, and any user who can sign into the endpoint can access unifi-blink. For more information, see the [Permissions section of the PrivateAuth spec](https://github.com/thatoddmailbox/PrivateAuth#permissions).

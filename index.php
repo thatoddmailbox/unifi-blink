@@ -9,7 +9,7 @@ if (CSRF_PROTECTION || $privateAuthEnabled) {
 }
 
 if ($privateAuthEnabled) {
-	if (!isset($_SESSION["privateAuthMe"])) {
+	if (!isset($_SESSION["privateAuthDetails"])) {
 		if (!isset($_GET["code"])) {
 			// need to login
 			$_SESSION["privateAuthState"] = generate_csrf_token();
@@ -36,11 +36,18 @@ if ($privateAuthEnabled) {
 				die("PrivateAuth token invalid.");
 			}
 
-			if (!property_exists($tokenDetails, "me")) {
+			if (!property_exists($tokenDetails, "me") || !property_exists($tokenDetails, "username") || !property_exists($tokenDetails, "permissions")) {
 				die("PrivateAuth server response invalid.");
 			}
 
-			$_SESSION["privateAuthMe"] = $tokenDetails->me;
+			if (defined("PRIVATEAUTH_REQUIRE_PERMISSION") && PRIVATEAUTH_REQUIRE_PERMISSION != "") {
+				// we need to verify the user has the correct permission
+				if (!in_array(PRIVATEAUTH_REQUIRE_PERMISSION, $tokenDetails->permissions)) {
+					die("You don't have permission to access this application.");
+				}
+			}
+
+			$_SESSION["privateAuthDetails"] = $tokenDetails;
 			header("Location: " . PRIVATEAUTH_CLIENT_ID);
 			die();
 		}
@@ -56,7 +63,7 @@ if ($privateAuthEnabled) {
 				}
 			}
 
-			unset($_SESSION["privateAuthMe"]);
+			unset($_SESSION["privateAuthDetails"]);
 			die("You have been logged out.");
 		}
 	}
@@ -156,9 +163,9 @@ curl_close($ch);
 			<div class="status"><?php if ($locating) { ?>locating<?php } else { ?>not locating<?php } ?></div>
 			<input type="submit" value="Toggle" />
 		</form>
-		<?php if (isset($_SESSION["privateAuthMe"])) { ?>
+		<?php if (isset($_SESSION["privateAuthDetails"])) { ?>
 			<form class="loginInfo" method="POST">
-				logged in as <?php echo htmlspecialchars($_SESSION["privateAuthMe"]); ?>
+				logged in as <?php echo htmlspecialchars(privateauth_get_display_name($_SESSION["privateAuthDetails"])); ?>
 				<?php if (CSRF_PROTECTION) { ?>
 					<input type="hidden" name="csrfToken" value="<?php echo htmlentities($_SESSION["csrfToken"]); ?>" />
 				<?php } ?>

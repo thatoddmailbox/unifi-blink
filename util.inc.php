@@ -26,6 +26,7 @@ function privateauth_verify_token($code) {
 
 	curl_setopt($ch, CURLOPT_URL, PRIVATEAUTH_ENDPOINT);
 	curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+	curl_setopt($ch, CURLOPT_HTTPHEADER, array("X-PrivateAuth-Version: 1"));
 
 	$stringData = http_build_query(array(
 		"code" => $code,
@@ -44,6 +45,17 @@ function privateauth_verify_token($code) {
 	}
 
 	return json_decode($content);
+}
+
+function privateauth_get_display_name($details) {
+	if (property_exists($details, "name")) {
+		return $details->name;
+	}
+	if (property_exists($details, "username")) {
+		return $details->username;
+	}
+
+	return $details->me;
 }
 
 function do_unifi_request($type, $path, $data) {

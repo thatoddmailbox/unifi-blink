@@ -12,3 +12,4 @@ define("AUTH_TOKEN", "");
 define("PRIVATEAUTH_ENDPOINT", "");
 define("PRIVATEAUTH_CLIENT_ID", "");
 define("PRIVATEAUTH_REDIRECT_URI", "");
+define("PRIVATEAUTH_REQUIRE_PERMISSION", "unifi-blink:access");
